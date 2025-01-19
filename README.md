@@ -63,32 +63,96 @@ finally:
     loader.close()
 ```
 
-## Development
+## Testing
+
+### Prerequisites
+Install test dependencies:
+```bash
+pip install pytest pytest-cov pytest-mock
+```
 
 ### Running Tests
 
+1. Run all tests:
 ```bash
-# Run all tests
 pytest
-
-# Run tests with coverage
-pytest --cov=csv_to_rds tests/
-
-# Run specific test file
-pytest tests/test_loader.py
 ```
 
-### Code Quality
+2. Run tests with verbose output:
+```bash
+pytest -v
+```
+
+3. Run tests with coverage report:
+```bash
+pytest --cov=csv_to_rds tests/
+```
+
+4. Run specific test file:
+```bash
+pytest tests/test_csv_to_rds.py
+```
+
+5. Run tests matching specific pattern:
+```bash
+pytest -k "test_validate"  # Runs all tests with "test_validate" in the name
+```
+
+### Test Coverage Areas
+
+The test suite covers:
+1. **Configuration Management**
+   - Config file loading
+   - Validation of required fields
+   - Error handling for missing/invalid configuration
+
+2. **Database Operations**
+   - Connection establishment
+   - Data insertion
+   - Chunked loading
+   - Transaction handling
+   - Error recovery
+
+3. **Data Validation**
+   - CSV file validation
+   - Column name validation
+   - Data type checking
+   - Empty file handling
+   - Error reporting
+
+4. **Integration Testing**
+   - End-to-end data loading
+   - Config to database flow
+   - Error propagation
+
+### Test Structure
+
+The test suite is organized into several test classes:
+
+- `TestConfigManager`: Tests configuration loading and validation
+- `TestDatabaseManager`: Tests database operations and connections
+- `TestCSVtoRDSLoader`: Tests the main loader functionality
+- Standalone test functions for utilities
+
+### Mock Objects
+
+The tests use mock objects to:
+- Simulate database connections
+- Mock file operations
+- Test error conditions
+- Verify function calls
+
+### Example Test Run
 
 ```bash
-# Run linter
-flake8 csv_to_rds tests
+$ pytest -v
+============================= test session starts ==============================
+collecting ... collected 12 items
 
-# Run type checker
-mypy csv_to_rds
-
-# Format code
-black csv_to_rds tests
+test_csv_to_rds.py::TestConfigManager::test_load_database_config_valid PASSED
+test_csv_to_rds.py::TestConfigManager::test_load_database_config_missing_file PASSED
+...
+============================== 12 passed in 2.13s =============================
 ```
 
 ## Error Handling
@@ -110,6 +174,12 @@ The package logs all operations to both file (`csv_to_rds.log`) and console outp
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+### Development Guidelines
+1. Add tests for new features
+2. Maintain code coverage above 90%
+3. Follow PEP8 style guide
+4. Update documentation as needed
 
 ## Author
 
