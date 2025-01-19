@@ -16,7 +16,7 @@ A Python tool for efficiently loading CSV files into AWS RDS databases with vali
 
 ```bash
 # Clone the repository
-git clone https://github.com/yogeshc/csv_to_rds.git
+git clone https://github.com/yogeshc/AWS_CSV_RDS_PIPELINE.git
 cd csv_to_rds
 
 # Install the package and dependencies
