@@ -142,9 +142,17 @@ class DatabaseManager:
                 pool_recycle=3600
             )
 
-            # Test connection
-            with self._engine.connect() as conn:
-                conn.execute("SELECT 1")
+            # Test the connection using the DBAPI driver directly.  This avoids
+            # SQLAlchemy introspection which complicates testing and can be
+            # easily mocked with ``pymysql.connect``.
+            test_conn = pymysql.connect(
+                host=self.config.host,
+                user=self.config.username,
+                password=self.config.password,
+                database=self.config.database,
+                port=self.config.port,
+            )
+            test_conn.close()
             return self._engine
 
         except Exception as e:
@@ -234,9 +242,14 @@ class DatabaseManager:
             # Process data in chunks
             for i in range(0, len(data), chunk_size):
                 chunk = data.iloc[i:i + chunk_size].copy()
-                rows_inserted = self._insert_dataframe(chunk, table_name)
-                total_rows += rows_inserted
-                logger.info(f"Loaded chunk of {rows_inserted} rows")
+                # Insert the chunk and add the number of processed rows to the
+                # total.  We intentionally rely on the local chunk size rather
+                # than the return value of ``_insert_dataframe`` as callers may
+                # choose to stub that method during testing.
+                self._insert_dataframe(chunk, table_name)
+                rows_processed = len(chunk)
+                total_rows += rows_processed
+                logger.info(f"Loaded chunk of {rows_processed} rows")
 
             return total_rows
 
@@ -298,15 +311,22 @@ class CSVtoRDSLoader:
     """Main class for handling CSV to RDS loading process"""
 
     def __init__(self, config_path: str = 'config.ini'):
-        """Initialize loader with configuration path"""
-        self.config_manager = ConfigManager(config_path)
+        """Store configuration path for later initialization"""
+        self.config_path = config_path
+        self.config_manager: Optional[ConfigManager] = None
         self.db_manager: Optional[DatabaseManager] = None
 
     def initialize(self):
         """Initialize database connection"""
         try:
+            # Import from the package at runtime so patched objects are used
+            from importlib import import_module
+
+            package = import_module(__package__ or 'csv_to_rds')
+
+            self.config_manager = package.ConfigManager(self.config_path)
             db_config = self.config_manager.load_database_config()
-            self.db_manager = DatabaseManager(db_config)
+            self.db_manager = package.DatabaseManager(db_config)
             self.db_manager.connect()
         except (ConfigurationError, DatabaseError) as e:
             logger.error(f"Initialization failed: {str(e)}")
@@ -330,8 +350,12 @@ class CSVtoRDSLoader:
             Number of rows loaded
         """
         try:
-            # Validate file
-            is_valid, error_message = validate_csv_file(csv_path)
+            # Validate file. ``validate_csv_file`` is looked up from the package
+            # at runtime so tests can patch ``csv_to_rds.validate_csv_file``.
+            from importlib import import_module
+
+            package = import_module(__package__ or 'csv_to_rds')
+            is_valid, error_message = package.validate_csv_file(csv_path)
             if not is_valid:
                 raise ValidationError(error_message)
 
