@@ -7,7 +7,7 @@ import os
 import pytest
 import pandas as pd
 import pymysql
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, mock_open
 from csv_to_rds import (
     CSVtoRDSLoader,
     ConfigManager,
